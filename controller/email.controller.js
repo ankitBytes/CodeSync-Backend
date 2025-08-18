@@ -1,3 +1,17 @@
+/**
+ * The above code defines functions to send and verify OTPs using email and generate JWT tokens for
+ * authentication.
+ * @param req - The `req` parameter in the functions `SendOtp` and `VerifyOtp` represents the request
+ * object in Express.js. It contains information about the HTTP request that triggered the function,
+ * such as request headers, parameters, body, etc. In this case, `req.body` is used
+ * @param res - The `res` parameter in the code snippets you provided stands for the response object in
+ * Express.js. It is used to send a response back to the client making the HTTP request. The response
+ * object (`res`) has methods like `res.status()`, `res.json()`, and `res.send()`
+ * @returns The `SendOtp` function sends an OTP (One Time Password) to the provided email address. It
+ * generates a random OTP, saves it in the database with an expiration time of 5 minutes, and sends an
+ * email containing the OTP to the user. The function returns a JSON response with a success message if
+ * the OTP is sent successfully, or an error message if there was an issue.
+ */
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../utils/mailer.js";

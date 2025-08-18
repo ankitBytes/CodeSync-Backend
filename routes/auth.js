@@ -10,6 +10,7 @@ import {
   Login,
   VerifyUser
 } from "../controller/auth.controller.js";
+import AuthMiddleware from "../middleware/authMiddleware.js";
 
 //email controller
 import { SendOtp, VerifyOtp } from "../controller/email.controller.js";
@@ -53,7 +54,7 @@ router.post("/sendOtp", SendOtp);
 router.post("/verifyOtp", VerifyOtp);
 router.post("/signup", Signup);
 router.post("/login", Login);
-router.get("/me", VerifyUser, (req, res) => {
+router.get("/me", AuthMiddleware, (req, res) => {
   return res.status(200).json({ user: req.user });
 });
 

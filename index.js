@@ -1,51 +1,113 @@
 import express from "express";
 import dotenv from "dotenv";
 import session from "express-session";
-import authRoutes from "./routes/auth.js";
 import passport from "passport";
 import cors from "cors";
 import mongoose from "mongoose";
 import "./config/passport.js";
 import cookieParser from "cookie-parser";
-import { sendEmail } from "./utils/mailer.js";
+import "./config/cloudinary.js"; // Ensure cloudinary is configured
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+
+import authRoutes from "./routes/auth.js";
+import profileRoutes from "./routes/profile.js";
 
 const app = express();
 dotenv.config();
+
+// Environment variable validation
+const requiredEnvVars = [
+  'MONGO_URI',
+  'JWT_SECRET',
+  'SESSION_SECRET',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET'
+];
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`❌ Missing required environment variable: ${envVar}`);
+    process.exit(1);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === "production";
+
+// Security middleware
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use(limiter);
+
+// Stricter rate limiting for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: 'Too many authentication attempts, please try again later.'
+});
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // or http://localhost:5173 if not https
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
   })
 );
 
-// ✅ Use only express-session
+// Session configuration with MongoDB store
+import MongoStore from "connect-mongo";
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "default_session_secret",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    // Optional: add store if needed (like MongoStore)
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      collectionName: 'sessions',
+      ttl: 24 * 60 * 60, // 1 day
+    }),
+    cookie: {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "Strict" : "Lax",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    }
   })
 );
 
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 
-app.use("/auth", authRoutes);
+// Apply auth rate limiting to auth routes
+app.use("/auth", authLimiter, authRoutes);
+app.use("/user", profileRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to the CodeSync API");
-})
+});
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// MongoDB connection with better error handling
+await mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected successfully"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
