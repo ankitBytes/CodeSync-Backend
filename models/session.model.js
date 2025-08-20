@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 
 const sessionSchema = new mongoose.Schema({
   // Basic session information
+  sessionId: {
+    type: String,
+    required: true
+  },
   title: { 
     type: String, 
     required: true,
@@ -10,13 +14,6 @@ const sessionSchema = new mongoose.Schema({
   description: { 
     type: String, 
     maxLength: 500 
-  },
-  
-  // Problem/Challenge association
-  problemId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Problem",
-    required: true
   },
   
   // Session creator and ownership
@@ -62,12 +59,8 @@ const sessionSchema = new mongoose.Schema({
   difficulty: { 
     type: String, 
     enum: ['easy', 'medium', 'hard'], 
-    required: true 
-  },
-  category: { 
-    type: String, 
-    enum: ['arrays', 'strings', 'trees', 'graphs', 'dynamic-programming', 'greedy', 'backtracking', 'bit-manipulation', 'math', 'design', 'other'], 
-    required: true 
+    required: true,
+    default: 'easy'
   },
   estimatedDuration: { type: Number }, // in minutes
   tags: [{ type: String }],
@@ -77,13 +70,13 @@ const sessionSchema = new mongoose.Schema({
     language: { 
       type: String, 
       required: true,
-      enum: ['javascript', 'python', 'java', 'cpp', 'c', 'csharp', 'go', 'rust', 'swift', 'kotlin', 'php', 'ruby', 'scala', 'typescript']
+      enum: ['javascript', 'python', 'java', 'cpp', 'c', 'csharp', 'go', 'rust', 'swift', 'kotlin', 'php', 'ruby', 'scala', 'typescript'],
+      default: 'javascript'
     },
     code: { type: String, default: '' },
     version: { type: Number, default: 1 },
     lastSaved: { type: Date, default: Date.now },
     lastModifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    autoSave: { type: Boolean, default: true }
   },
   
   // Code execution and testing
@@ -233,10 +226,8 @@ sessionSchema.virtual('progress').get(function() {
 
 // Indexes for better query performance
 sessionSchema.index({ creator: 1 });
-sessionSchema.index({ problemId: 1 });
 sessionSchema.index({ status: 1 });
 sessionSchema.index({ difficulty: 1 });
-sessionSchema.index({ category: 1 });
 sessionSchema.index({ 'participants.userId': 1 });
 sessionSchema.index({ startedAt: -1 });
 sessionSchema.index({ 'codeState.language': 1 });
@@ -330,7 +321,6 @@ sessionSchema.methods.getSummary = function() {
     id: this._id,
     title: this.title,
     difficulty: this.difficulty,
-    category: this.category,
     duration: this.durationMinutes,
     participants: this.participants.length,
     progress: this.progress,

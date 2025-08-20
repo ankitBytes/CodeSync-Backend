@@ -1,0 +1,116 @@
+[1mdiff --git a/controller/session.controller.js b/controller/session.controller.js[m
+[1mindex 4c66e5d..6621d3b 100644[m
+[1m--- a/controller/session.controller.js[m
+[1m+++ b/controller/session.controller.js[m
+[36m@@ -1 +1,109 @@[m
+[31m-import Session from "../models/session.model.js";[m
+\ No newline at end of file[m
+[32m+[m[32mimport Session from "../models/session.model.js";[m[41m[m
+[32m+[m[32mimport { v4 as uuidv4 } from "uuid";[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mexport const createSession = async (req, res) => {[m[41m[m
+[32m+[m[32m  try {[m[41m[m
+[32m+[m[32m    const {[m[41m[m
+[32m+[m[32m      title,[m[41m[m
+[32m+[m[32m      description = "",[m[41m[m
+[32m+[m[32m      tags = [],[m[41m[m
+[32m+[m[32m      language,[m[41m[m
+[32m+[m[32m      difficulty,[m[41m[m
+[32m+[m[32m    } = req.body;[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    // Prefer authenticated user; fallback to body for legacy[m[41m[m
+[32m+[m[32m    const creatorId = req.user?.id || req.user?._id || req.body.userId;[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    // Validate required inputs[m[41m[m
+[32m+[m[32m    if (!creatorId) return res.status(401).json({ message: "Unauthorized" });[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    const allowedDifficulties = ["easy", "medium", "hard"];[m[41m[m
+[32m+[m[32m    const allowedLanguages = [[m[41m[m
+[32m+[m[32m      "javascript",[m[41m[m
+[32m+[m[32m      "python",[m[41m[m
+[32m+[m[32m      "java",[m[41m[m
+[32m+[m[32m      "cpp",[m[41m[m
+[32m+[m[32m      "c",[m[41m[m
+[32m+[m[32m      "csharp",[m[41m[m
+[32m+[m[32m      "go",[m[41m[m
+[32m+[m[32m      "rust",[m[41m[m
+[32m+[m[32m      "swift",[m[41m[m
+[32m+[m[32m      "kotlin",[m[41m[m
+[32m+[m[32m      "php",[m[41m[m
+[32m+[m[32m      "ruby",[m[41m[m
+[32m+[m[32m      "scala",[m[41m[m
+[32m+[m[32m      "typescript",[m[41m[m
+[32m+[m[32m    ];[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    // Validate if provided[m[41m[m
+[32m+[m[32m    if (difficulty && !allowedDifficulties.includes(difficulty)) {[m[41m[m
+[32m+[m[32m      return res[m[41m[m
+[32m+[m[32m        .status(400)[m[41m[m
+[32m+[m[32m        .json({ message: "Valid difficulty is required (easy|medium|hard)" });[m[41m[m
+[32m+[m[32m    }[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    if (language && !allowedLanguages.includes(language)) {[m[41m[m
+[32m+[m[32m      return res.status(400).json({ message: "Valid language is required" });[m[41m[m
+[32m+[m[32m    }[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    const sessionId = uuidv4().slice(0, 8);[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    // Build update document: only set fields that are provided[m[41m[m
+[32m+[m[32m    const update = { $set: {}, $setOnInsert: {} };[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    update.$set.sessionId = sessionId;[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    if (title) update.$set.title = title;[m[41m[m
+[32m+[m[32m    if (description !== undefined) update.$set.description = description;[m[41m[m
+[32m+[m[32m    if (Array.isArray(tags)) update.$set.tags = tags;[m[41m[m
+[32m+[m[32m    if (difficulty) update.$set.difficulty = difficulty;[m[41m[m
+[32m+[m[32m    if (language) update.$set["codeState.language"] = language;[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    // Defaults for insert[m[41m[m
+[32m+[m[32m    update.$setOnInsert.creator = creatorId;[m[41m[m
+[32m+[m[32m    update.$setOnInsert.difficulty = difficulty || "easy";[m[41m[m
+[32m+[m[32m    update.$setOnInsert.participants = [[m[41m[m
+[32m+[m[32m      {[m[41m[m
+[32m+[m[32m        userId: creatorId,[m[41m[m
+[32m+[m[32m        role: "owner",[m[41m[m
+[32m+[m[32m        permissions: {[m[41m[m
+[32m+[m[32m          canEdit: true,[m[41m[m
+[32m+[m[32m          canInvite: true,[m[41m[m
+[32m+[m[32m          canDelete: true,[m[41m[m
+[32m+[m[32m          canManageParticipants: true,[m[41m[m
+[32m+[m[32m        },[m[41m[m
+[32m+[m[32m      },[m[41m[m
+[32m+[m[32m    ];[m[41m[m
+[32m+[m[32m    update.$setOnInsert["codeState.language"] = language || "javascript";[m[41m[m
+[32m+[m[32m    update.$setOnInsert["codeState.code"] = "";[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    // Ensure there is at least a title when creating[m[41m[m
+[32m+[m[32m    if (!title) {[m[41m[m
+[32m+[m[32m      // If no title and this would be an insert, reject[m[41m[m
+[32m+[m[32m      const existing = await Session.findOne({[m[41m[m
+[32m+[m[32m        creator: creatorId,[m[41m[m
+[32m+[m[32m        status: "active",[m[41m[m
+[32m+[m[32m      });[m[41m[m
+[32m+[m[32m      if (!existing) {[m[41m[m
+[32m+[m[32m        return res.status(400).json({ message: "Title is required" });[m[41m[m
+[32m+[m[32m      }[m[41m[m
+[32m+[m[32m    }[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    const updatedSession = await Session.findOneAndUpdate([m[41m[m
+[32m+[m[32m      { creator: creatorId, status: "active" },[m[41m[m
+[32m+[m[32m      update,[m[41m[m
+[32m+[m[32m      { new: true, upsert: true, setDefaultsOnInsert: true }[m[41m[m
+[32m+[m[32m    );[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32m    return res[m[41m[m
+[32m+[m[32m      .status(201)[m[41m[m
+[32m+[m[32m      .json({[m[41m[m
+[32m+[m[32m        message: "Session created successfully",[m[41m[m
+[32m+[m[32m        session: updatedSession,[m[41m[m
+[32m+[m[32m      });[m[41m[m
+[32m+[m[32m  } catch (error) {[m[41m[m
+[32m+[m[32m    return res[m[41m[m
+[32m+[m[32m      .status(500)[m[41m[m
+[32m+[m[32m      .json({ message: "Failed to create session", error: error.message });[m[41m[m
+[32m+[m[32m  }[m[41m[m
+[32m+[m[32m};[m[41m[m

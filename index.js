@@ -12,6 +12,7 @@ import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/auth.js";
 import profileRoutes from "./routes/profile.js";
+import sessionRoutes from "./routes/session.route.js";
 
 const app = express();
 dotenv.config();
@@ -44,7 +45,7 @@ const limiter = rateLimit({
   max: isProduction ? 200 : 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
 });
-app.use(limiter);
+// app.use(limiter);
 
 // Stricter rate limiting for auth routes
 const authLimiter = rateLimit({
@@ -88,8 +89,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 
 // Apply auth rate limiting to auth routes
-app.use("/auth", authLimiter, authRoutes);
+app.use("/auth", authRoutes);
 app.use("/user", profileRoutes);
+app.use("/session", sessionRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to the CodeSync API");
