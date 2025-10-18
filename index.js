@@ -9,12 +9,21 @@ import cookieParser from "cookie-parser";
 import "./config/cloudinary.js"; // Ensure cloudinary is configured
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import http from "http";
+import { Server } from "socket.io";
 
 import authRoutes from "./routes/auth.js";
 import profileRoutes from "./routes/profile.js";
 import sessionRoutes from "./routes/session.route.js";
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }
+});
 dotenv.config();
 
 // Environment variable validation
@@ -93,6 +102,11 @@ app.use("/auth", authRoutes);
 app.use("/user", profileRoutes);
 app.use("/session", sessionRoutes);
 
+io.on("connection", (socket) => {
+  console.log("User Connected");
+  console.log("socket data: ", socket);
+})
+
 app.get("/", (req, res) => {
   res.send("Welcome to the CodeSync API");
 });
@@ -109,7 +123,7 @@ await mongoose
     process.exit(1);
   });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

@@ -107,3 +107,51 @@ export const createSession = async (req, res) => {
       .json({ message: "Failed to create session", error: error.message });
   }
 };
+
+export const joinUser = async (req, res) => {
+  try {
+    const { sessionId } = req.params; // /session/:sessionId/join
+    const userId = req.user?.id || req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Find active session
+    const session = await Session.findOne({ sessionId, status: "active" });
+    if (!session) {
+      return res.status(404).json({ message: "Session not found or inactive" });
+    }
+
+    // Check if user already in participants list
+    const alreadyJoined = session.participants.some(
+      (p) => p.userId.toString() === userId.toString()
+    );
+
+    if (!alreadyJoined) {
+      // Add new participant
+      session.participants.push({
+        userId,
+        role: "participant",
+        permissions: {
+          canEdit: true,
+          canInvite: false,
+          canDelete: false,
+          canManageParticipants: false,
+        },
+      });
+
+      await session.save();
+    }
+
+    return res.status(200).json({
+      message: alreadyJoined ? "Already in session" : "Joined session successfully",
+      session,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to join session",
+      error: error.message,
+    });
+  }
+};
