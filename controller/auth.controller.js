@@ -65,7 +65,7 @@ export const googleCallback = (req, res, next) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
           });
 
-          const redirectUrl = process.env.FRONTEND_URL || "http://localhost:5173/";
+          const redirectUrl = process.env.CLIENT_URL || "http://localhost:5173/";
           return res.redirect(redirectUrl);
         } catch (innerErr) {
           console.error("Token Generation Error:", innerErr.message);
