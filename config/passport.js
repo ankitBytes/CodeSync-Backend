@@ -8,6 +8,7 @@ import Session from "../models/session.model.js";
 import dotenv from "dotenv";
 
 dotenv.config();
+const isProduction = process.env.NODE_ENV === "production";
 
 // Google OAuth Strategy
 passport.use(
@@ -15,7 +16,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/auth/google/callback",
+      callbackURL: isProduction? "/auth/google/callback" : process.env.GOOGLE_CALLBACK_URL,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -86,3 +87,4 @@ passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) =>
   User.findById(id).then((user) => done(null, user))
 );
+
