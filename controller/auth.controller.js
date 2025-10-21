@@ -60,12 +60,14 @@ export const googleCallback = (req, res, next) => {
           // Set the token as a cookie
           res.cookie("token", token, {
             httpOnly: true,
-            secure: isProduction,
-            sameSite: isProduction ? "Strict" : "Lax",
+            secure: isProduction, // must be true in production (HTTPS)
+            sameSite: isProduction ? "None" : "Lax", // None allows cross-site cookies
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
           });
 
-          const redirectUrl = isProduction ? process.env.CLIENT_URL : "http://localhost:5173/";
+          const redirectUrl = isProduction
+            ? process.env.CLIENT_URL
+            : "http://localhost:5173/";
           return res.redirect(redirectUrl);
         } catch (innerErr) {
           console.error("Token Generation Error:", innerErr.message);
@@ -116,18 +118,20 @@ export const current_user = (req, res) => {
 
 export const Login = async (req, res, next) => {
   const { email, password } = req.body;
-  
+
   // Input validation
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
-  
+
   if (!validateEmail(email)) {
     return res.status(400).json({ message: "Invalid email format" });
   }
-  
+
   if (!validatePassword(password)) {
-    return res.status(400).json({ message: "Password must be at least 6 characters" });
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 6 characters" });
   }
 
   try {
@@ -145,7 +149,9 @@ export const Login = async (req, res, next) => {
         email: user.email,
       };
 
-      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+      const token = jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: "7d",
+      });
 
       res.cookie("token", token, {
         httpOnly: true,
@@ -165,18 +171,20 @@ export const Login = async (req, res, next) => {
 
 export const Signup = async (req, res) => {
   const { email, password } = req.body;
-  
+
   // Input validation
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
-  
+
   if (!validateEmail(email)) {
     return res.status(400).json({ message: "Invalid email format" });
   }
-  
+
   if (!validatePassword(password)) {
-    return res.status(400).json({ message: "Password must be at least 6 characters" });
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 6 characters" });
   }
 
   try {
@@ -254,5 +262,3 @@ export const VerifyUser = async (req, res, next) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
-
-
