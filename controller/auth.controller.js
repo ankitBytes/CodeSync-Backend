@@ -60,9 +60,9 @@ export const googleCallback = (req, res, next) => {
           // Set the token as a cookie
           res.cookie("token", token, {
             httpOnly: true,
-            secure: isProduction, // must be true in production (HTTPS)
-            sameSite: isProduction ? "None" : "Lax", // None allows cross-site cookies
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            secure: true,
+            sameSite: "None",
+            maxAge: 24 * 60 * 60 * 1000,
           });
 
           const redirectUrl = isProduction
