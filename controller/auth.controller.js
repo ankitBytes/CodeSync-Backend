@@ -65,7 +65,7 @@ export const googleCallback = (req, res, next) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
           });
 
-          const redirectUrl = process.env.CLIENT_URL || "http://localhost:5173/";
+          const redirectUrl = isProduction ? process.env.CLIENT_URL : "http://localhost:5173/";
           return res.redirect(redirectUrl);
         } catch (innerErr) {
           console.error("Token Generation Error:", innerErr.message);
@@ -254,3 +254,4 @@ export const VerifyUser = async (req, res, next) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+
