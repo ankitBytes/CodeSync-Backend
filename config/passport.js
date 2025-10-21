@@ -16,7 +16,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: isProduction? "/auth/google/callback" : process.env.GOOGLE_CALLBACK_URL,
+      callbackURL: isProduction? process.env.GOOGLE_CALLBACK_URL : "/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -87,4 +87,5 @@ passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) =>
   User.findById(id).then((user) => done(null, user))
 );
+
 
