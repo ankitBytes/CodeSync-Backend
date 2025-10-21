@@ -18,12 +18,6 @@ import sessionRoutes from "./routes/session.route.js";
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: true,
-  }
-});
 dotenv.config();
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -41,10 +35,26 @@ for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     console.error(`❌ Missing required environment variable: ${envVar}`);
     process.exit(1);
+  } else {
+    console.log(`✅ Found environment variable: ${process.env[envVar]} `);
   }
 }
 
 const PORT = process.env.PORT || 3000;
+
+app.use(
+  cors({
+    origin: isProduction ? process.env.CLIENT_URL : "http://localhost:5173",
+    credentials: true,
+  })
+);
+
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }
+});
 
 // Security middleware
 app.use(helmet());
@@ -63,13 +73,6 @@ const authLimiter = rateLimit({
   max: isProduction ? 100 : 5, // limit each IP to 5 requests per windowMs
   message: 'Too many authentication attempts, please try again later.'
 });
-
-app.use(
-  cors({
-    origin: isProduction ? process.env.CLIENT_URL : "http://localhost:5173",
-    credentials: true,
-  })
-);
 
 // Session configuration with MongoDB store
 import MongoStore from "connect-mongo";
