@@ -38,12 +38,12 @@ export const googleCallback = (req, res, next) => {
   try {
     passport.authenticate(
       "google",
-      { failureRedirect: "/login", session: false },
+      { failureRedirect: process.env.CLIENT_URL + "/login", session: false },
       (err, user) => {
         try {
           if (err || !user) {
             console.error("Google Callback Error:", err?.message || "No user");
-            return res.redirect("/login");
+            return res.redirect(process.env.CLIENT_URL + "/login");
           }
 
           const payload = {
@@ -254,4 +254,5 @@ export const VerifyUser = async (req, res, next) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+
 
