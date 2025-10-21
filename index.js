@@ -33,7 +33,8 @@ const requiredEnvVars = [
   'JWT_SECRET',
   'SESSION_SECRET',
   'GOOGLE_CLIENT_ID',
-  'GOOGLE_CLIENT_SECRET'
+  'GOOGLE_CLIENT_SECRET',
+  'CLIENT_URL'
 ];
 
 for (const envVar of requiredEnvVars) {
