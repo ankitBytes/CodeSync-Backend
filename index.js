@@ -25,6 +25,7 @@ const io = new Server(server, {
   }
 });
 dotenv.config();
+const isProduction = process.env.NODE_ENV === "production";
 
 // Environment variable validation
 const requiredEnvVars = [
@@ -65,7 +66,7 @@ const authLimiter = rateLimit({
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: isProduction ? process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
   })
 );
@@ -127,4 +128,5 @@ server.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
 
