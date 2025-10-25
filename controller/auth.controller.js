@@ -242,14 +242,9 @@ export const Signup = async (req, res) => {
       expiresIn: "7d",
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "Strict" : "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    const redirectUrl = process.env.CLIENT_URL + `/success?token=${token}`;
 
-    return res.status(200).json({ message: "Signup successful" });
+    return res.status(200).json({ message: "Signup successful", redirectUrl });
   } catch (error) {
     return res
       .status(500)
