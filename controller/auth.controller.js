@@ -166,7 +166,7 @@ export const Login = async (req, res, next) => {
 
       const redirectUrl = process.env.CLIENT_URL + `/success?token=${token}`;
 
-      return res.redirect(redirectUrl);
+      return res.status(200).json({ message: "Login successful", redirectUrl });
     })(req, res, next);
   } catch (error) {
     return res
