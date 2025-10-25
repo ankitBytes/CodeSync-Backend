@@ -8,13 +8,13 @@ import {
   current_user,
   Signup,
   Login,
-  VerifyUser
+  VerifyUser,
+  UpdatePassword,
 } from "../controller/auth.controller.js";
 import AuthMiddleware from "../middleware/authMiddleware.js";
 
 //email controller
 import { SendOtp, VerifyOtp } from "../controller/email.controller.js";
-
 
 const router = express.Router();
 
@@ -54,6 +54,7 @@ router.post("/sendOtp", SendOtp);
 router.post("/verifyOtp", VerifyOtp);
 router.post("/signup", Signup);
 router.post("/login", Login);
+router.post("/update-password", UpdatePassword);
 router.get("/me", AuthMiddleware, (req, res) => {
   return res.status(200).json({ user: req.user });
 });

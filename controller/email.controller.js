@@ -16,14 +16,21 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../utils/mailer.js";
 import Otp from "../models/Otp.js";
+import User from "../models/User.js";
 import dotenv from "dotenv";
 dotenv.config();
 
 export const SendOtp = async (req, res) => {
-  const { email } = req.body;
+  const { email, purpose } = req.body;
   console.log(`Sending OTP to ${email}`);
-  
+
   try {
+    if (purpose === "signup") {
+      const user = await User.findOne({ email });
+      if (user) {
+        return res.status(409).json({ message: "User already exists" });
+      }
+    }
     const otp = crypto.randomInt(100000, 999999).toString();
 
     await Otp.deleteMany({ email });
@@ -58,13 +65,15 @@ export const VerifyOtp = async (req, res) => {
 
     await Otp.deleteMany({ email });
 
-    const token = jwt.sign({ email }, process.env.JWT, { expiresIn: "7d" });
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
     return res
       .status(200)
       .json({ message: "OTP verified successfully", token });
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "Error verifying OTP", error: error.message });
+      .json({ message: "Error verifying OTP", error: error });
   }
 };

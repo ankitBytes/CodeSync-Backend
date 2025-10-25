@@ -3,6 +3,7 @@ Passport.js for authentication strategies like Google OAuth and local authentica
 generation and verification, and a User model for interacting with user data. */
 import passport from "passport";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 import User from "../models/User.js";
 import UserProfile from "../models/profile.model.js";
@@ -58,16 +59,15 @@ export const googleCallback = (req, res, next) => {
           });
 
           // Set the token as a cookie
-          res.cookie("token", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None",
-            maxAge: 24 * 60 * 60 * 1000,
-          });
+          // res.cookie("token", token, {
+          //   httpOnly: true,
+          //   secure: true,
+          //   sameSite: "None",
+          //   maxAge: 24 * 60 * 60 * 1000,
+          // });
 
-          const redirectUrl = process.env.CLIENT_URL;
-
-          console.log(redirectUrl);
+          const redirectUrl =
+            process.env.CLIENT_URL + `/success?token=${token}`;
 
           return res.redirect(redirectUrl);
         } catch (innerErr) {
@@ -137,8 +137,11 @@ export const Login = async (req, res, next) => {
 
   try {
     passport.authenticate("local", { session: false }, (err, user, info) => {
+      console.log("Raw user found:", !!user, typeof user, user?._id);
+      console.log("User: ", user);
+      
       if (err || !user) {
-        console.error("Login Error:", err?.message || "No user found");
+        console.error("Login Error authController:", err?.message || "No user found");
         return res
           .status(401)
           .json({ message: info?.message || "Login failed" });
@@ -154,12 +157,14 @@ export const Login = async (req, res, next) => {
         expiresIn: "7d",
       });
 
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "Strict" : "Lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      // res.cookie("token", token, {
+      //   httpOnly: true,
+      //   secure: isProduction,
+      //   sameSite: isProduction ? "Strict" : "Lax",
+      //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      // });
+
+      const redirectUrl = process.env.CLIENT_URL + `/success?token=${token}`;
 
       return res.status(200).json({ message: "Login Successful" });
     })(req, res, next);
@@ -194,10 +199,14 @@ export const Signup = async (req, res) => {
       return res.status(409).json({ message: "User already exists" });
     }
 
+    const username = email.split("@")[0];
+
     const newUser = new User({
       email,
       password,
       provider: "local",
+      username,
+      displayName: username,
     });
 
     await newUser.save();
@@ -261,5 +270,25 @@ export const VerifyUser = async (req, res, next) => {
     next();
   } catch (error) {
     return res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+export const UpdatePassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error updating password:", error.message);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
