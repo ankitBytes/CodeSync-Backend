@@ -166,7 +166,7 @@ export const Login = async (req, res, next) => {
 
       const redirectUrl = process.env.CLIENT_URL + `/success?token=${token}`;
 
-      return res.status(200).json({ message: "Login Successful" });
+      return res.redirect(redirectUrl);
     })(req, res, next);
   } catch (error) {
     return res
@@ -235,7 +235,6 @@ export const Signup = async (req, res) => {
       // Rollback: delete user & profile if session creation fails
       await User.deleteOne({ _id: newUser._id });
       await UserProfile.deleteOne({ userId: newUser._id });
-      console.error("Profile/Session creation failed:", err.message);
       return res.status(500).json({ message: "Failed to create user profile" });
     }
 
@@ -282,9 +281,8 @@ export const UpdatePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-    await user.save({ validateBeforeSave: false });
+    user.password = newPassword;
+    await user.save();
 
     return res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {

@@ -12,7 +12,6 @@ const isProduction = process.env.NODE_ENV === "production";
 
 console.log("Passport file initiated");
 
-
 // Google OAuth Strategy
 passport.use(
   new GoogleStrategy(
@@ -67,25 +66,32 @@ passport.use(
 );
 
 // Local Strategy
+// Local Strategy
 passport.use(
   new LocalStrategy(
     { usernameField: "email", passwordField: "password" },
     async (email, password, done) => {
       try {
         const user = await User.findOne({ email });
-        console.log("Login Attempt:", email, user);
+
         if (!user) {
           return done(null, false, { message: "User not found" });
         }
-        if (!user.password) return done(null, false, { message: "Use Google Login for this account" });
+
+        if (!user.password) {
+          return done(null, false, {
+            message: "Use Google Login for this account",
+          });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
+
         if (!isMatch) {
           return done(null, false, { message: "Incorrect Password" });
         }
-        
         return done(null, user);
       } catch (err) {
+        console.error("PASSPORT ERROR:", err);
         return done(err);
       }
     }
@@ -96,5 +102,3 @@ passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) =>
   User.findById(id).then((user) => done(null, user))
 );
-
-
