@@ -9,26 +9,27 @@ import cookieParser from "cookie-parser";
 import "./config/cloudinary.js"; // Ensure cloudinary is configured
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import http from "http";
-import { Server } from "socket.io";
+import MongoStore from "connect-mongo";
 
+// Routes
 import authRoutes from "./routes/auth.js";
 import profileRoutes from "./routes/profile.js";
 import sessionRoutes from "./routes/session.route.js";
 
-const app = express();
-const server = http.createServer(app);
 dotenv.config();
-const isProduction = process.env.NODE_ENV === "production";
 
-// Environment variable validation
+const app = express();
+const isProduction = process.env.NODE_ENV === "production";
+const PORT = process.env.PORT || 3000;
+
+// ✅ Validate required environment variables
 const requiredEnvVars = [
-  'MONGO_URI',
-  'JWT_SECRET',
-  'SESSION_SECRET',
-  'GOOGLE_CLIENT_ID',
-  'GOOGLE_CLIENT_SECRET',
-  'CLIENT_URL'
+  "MONGO_URI",
+  "JWT_SECRET",
+  "SESSION_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "CLIENT_URL"
 ];
 
 for (const envVar of requiredEnvVars) {
@@ -36,12 +37,11 @@ for (const envVar of requiredEnvVars) {
     console.error(`❌ Missing required environment variable: ${envVar}`);
     process.exit(1);
   } else {
-    console.log(`✅ Found environment variable: ${process.env[envVar]} `);
+    console.log(`✅ Found environment variable: ${envVar}`);
   }
 }
 
-const PORT = process.env.PORT || 3000;
-
+// ✅ CORS configuration
 app.use(
   cors({
     origin: isProduction ? process.env.CLIENT_URL : "http://localhost:5173",
@@ -49,34 +49,22 @@ app.use(
   })
 );
 
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: true,
-  }
-});
+// ✅ Security headers
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false, // allow serving resources to different origins
+  })
+);
 
-// Security middleware
-app.use(helmet());
-
-// Rate limiting
+// ✅ General rate limiting (not for auth)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isProduction ? 200 : 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  max: isProduction ? 200 : 100,
+  message: "Too many requests from this IP, please try again later.",
 });
-// app.use(limiter);
+app.use(limiter);
 
-// Stricter rate limiting for auth routes
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isProduction ? 100 : 5, // limit each IP to 5 requests per windowMs
-  message: 'Too many authentication attempts, please try again later.'
-});
-
-// Session configuration with MongoDB store
-import MongoStore from "connect-mongo";
-
+// ✅ Session configuration
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -84,54 +72,48 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
-      collectionName: 'sessions',
+      collectionName: "sessions",
       ttl: 24 * 60 * 60, // 1 day
     }),
     cookie: {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "Strict" : "Lax",
+      secure: isProduction, // true only in production (HTTPS)
+      sameSite: isProduction ? "None" : "Lax", // "None" for cross-domain
       maxAge: 24 * 60 * 60 * 1000, // 1 day
-    }
+    },
   })
 );
 
+// ✅ Middleware setup
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
-// Apply auth rate limiting to auth routes
+// ✅ Routes
 app.use("/auth", authRoutes);
 app.use("/user", profileRoutes);
 app.use("/session", sessionRoutes);
 
-io.on("connection", (socket) => {
-  console.log("User Connected");
-  console.log("socket data: ", socket);
-})
-
+// ✅ Root route
 app.get("/", (req, res) => {
   res.send("Welcome to the CodeSync API");
 });
 
-// MongoDB connection with better error handling
-await mongoose
+// ✅ Connect to MongoDB first, then start the server
+mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB connected successfully"))
+  .then(() => {
+    console.log("✅ MongoDB connected successfully");
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+    });
+  })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err);
     process.exit(1);
   });
-
-server.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
-
-
-
-
