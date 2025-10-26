@@ -139,9 +139,12 @@ export const Login = async (req, res, next) => {
     passport.authenticate("local", { session: false }, (err, user, info) => {
       console.log("Raw user found:", !!user, typeof user, user?._id);
       console.log("User: ", user);
-      
+
       if (err || !user) {
-        console.error("Login Error authController:", err?.message || "No user found");
+        console.error(
+          "Login Error authController:",
+          err?.message || "No user found"
+        );
         return res
           .status(401)
           .json({ message: info?.message || "Login failed" });
@@ -253,7 +256,8 @@ export const Signup = async (req, res) => {
 };
 
 export const VerifyUser = async (req, res, next) => {
-  const token = req.cookies.token;
+  const token =
+    req.cookies?.token || req.header("Authorization")?.replace("Bearer ", "");
   if (!token) {
     return res.status(401).json({ message: "Unauthorized" });
   }
