@@ -59,15 +59,14 @@ export const googleCallback = (req, res, next) => {
           });
 
           // Set the token as a cookie
-          // res.cookie("token", token, {
-          //   httpOnly: true,
-          //   secure: true,
-          //   sameSite: "None",
-          //   maxAge: 24 * 60 * 60 * 1000,
-          // });
+          res.cookie("token", token, {
+            httpOnly: true,
+            secure: isProduction, // Only true in production (HTTPS)
+            sameSite: isProduction ? "None" : "Lax", // Cross-site only needed in prod
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          });
 
-          const redirectUrl =
-            process.env.CLIENT_URL + `/success?token=${token}`;
+          const redirectUrl = process.env.CLIENT_URL;
 
           return res.redirect(redirectUrl);
         } catch (innerErr) {
@@ -160,16 +159,14 @@ export const Login = async (req, res, next) => {
         expiresIn: "7d",
       });
 
-      // res.cookie("token", token, {
-      //   httpOnly: true,
-      //   secure: isProduction,
-      //   sameSite: isProduction ? "Strict" : "Lax",
-      //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      // });
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: isProduction, // Only true in production (HTTPS)
+        sameSite: isProduction ? "None" : "Lax", // Cross-site only needed in prod
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
 
-      const redirectUrl = process.env.CLIENT_URL + `/success?token=${token}`;
-
-      return res.status(200).json({ message: "Login successful", redirectUrl });
+      return res.status(200).json({ message: "Login successful" });
     })(req, res, next);
   } catch (error) {
     return res
@@ -245,9 +242,14 @@ export const Signup = async (req, res) => {
       expiresIn: "7d",
     });
 
-    const redirectUrl = process.env.CLIENT_URL + `/success?token=${token}`;
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction, // Only true in production (HTTPS)
+      sameSite: isProduction ? "None" : "Lax", // Cross-site only needed in prod
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
-    return res.status(200).json({ message: "Signup successful", redirectUrl });
+    return res.status(200).json({ message: "Signup successful" });
   } catch (error) {
     return res
       .status(500)
@@ -258,6 +260,8 @@ export const Signup = async (req, res) => {
 export const VerifyUser = async (req, res, next) => {
   const token =
     req.cookies?.token || req.header("Authorization")?.replace("Bearer ", "");
+  console.log(token);
+
   if (!token) {
     return res.status(401).json({ message: "Unauthorized" });
   }
