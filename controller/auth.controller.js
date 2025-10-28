@@ -67,7 +67,7 @@ export const googleCallback = (req, res, next) => {
           });
 
           const redirectUrl = process.env.CLIENT_URL;
-
+          console.log(redirectUrl);
           return res.redirect(redirectUrl);
         } catch (innerErr) {
           console.error("Token Generation Error:", innerErr.message);
@@ -293,3 +293,4 @@ export const UpdatePassword = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
